@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC San Diego Library — Data Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F6F9;
+    --panel: #FFFFFF;
+    --navy: #00274C;
+    --blue: #1A5276;
+    --gold: #B7791F;
+    --teal: #0E6655;
+    --red: #C0392B;
+    --green: #1E8449;
+    --muted: #718096;
+    --border: #DDE3EC;
+    --text: #1A202C;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--navy);
+    color: white;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-badge {
+    background: var(--gold);
+    color: white;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .topbar-title { font-weight: 500; color: rgba(255,255,255,0.8); }
+  .topbar-right { color: rgba(255,255,255,0.45); font-family: var(--mono); }
+
+  /* HEADER */
+  header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--navy);
+    padding: 20px 24px 0;
+  }
+  .header-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 16px;
+  }
+  .header-title {
+    font-size: 20px; font-weight: 600; color: var(--navy);
+    line-height: 1.3;
+  }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* SUMMARY ROW */
+  .summary-row {
+    display: flex; gap: 0;
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .sum-cell {
+    flex: 1; min-width: 120px;
+    padding: 12px 16px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .sum-cell:last-child { border-right: none; }
+  .sum-val {
+    font-family: var(--mono);
+    font-size: 18px; font-weight: 600;
+    color: var(--navy); line-height: 1;
+  }
+  .sum-label { font-size: 10px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .sum-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .sum-cell.c-teal::before { background: var(--teal); }
+  .sum-cell.c-gold::before { background: var(--gold); }
+  .sum-cell.c-red::before { background: var(--red); }
+  .sum-cell.c-blue::before { background: var(--blue); }
+  .sum-cell.c-green::before { background: var(--green); }
+
+  /* GRID LAYOUT */
+  .grid {
+    display: grid;
+    gap: 12px;
+    padding: 16px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .grid-main { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-full { grid-template-columns: 1fr; margin-top: 0; }
+
+  /* PANEL */
+  .pnl {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .pnl-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 9px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .pnl-title {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--navy);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pnl-tag {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .tag-teal { background: #D4EFDF; color: var(--teal); }
+  .tag-gold { background: #FDEBD0; color: var(--gold); }
+  .tag-blue { background: #D6EAF8; color: var(--blue); }
+  .tag-red { background: #FADBD8; color: var(--red); }
+  .tag-navy { background: #D0E4F0; color: var(--navy); }
+
+  .pnl-body { padding: 14px; }
+
+  /* METRIC TABLE */
+  .metric-table { width: 100%; border-collapse: collapse; }
+  .metric-table tr { border-bottom: 1px solid var(--border); }
+  .metric-table tr:last-child { border-bottom: none; }
+  .metric-table td { padding: 9px 6px; vertical-align: middle; }
+  .metric-label { font-size: 12px; color: var(--text); }
+  .metric-label small { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 15px; font-weight: 600;
+    color: var(--navy); text-align: right; white-space: nowrap;
+  }
+  .metric-bar-cell { width: 80px; padding-right: 8px; }
+  .mini-bar { height: 6px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  /* BIG NUMBER DISPLAY */
+  .big-num-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+  .big-num-cell {
+    background: var(--panel);
+    padding: 16px 14px;
+  }
+  .big-num-val {
+    font-family: var(--mono);
+    font-size: 26px; font-weight: 600;
+    color: var(--navy); line-height: 1;
+  }
+  .big-num-val.sm { font-size: 20px; }
+  .big-num-label { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+  .big-num-accent { width: 24px; height: 3px; border-radius: 1px; margin-bottom: 8px; }
+
+  /* COMPARISON TABLE */
+  .comp-table { width: 100%; border-collapse: collapse; }
+  .comp-table th {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted);
+    padding: 8px 10px; border-bottom: 2px solid var(--border);
+    text-align: left;
+  }
+  .comp-table th.right { text-align: right; }
+  .comp-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr:hover td { background: var(--bg); }
+  .comp-val {
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 600; text-align: right; white-space: nowrap;
+  }
+  .comp-pct {
+    font-family: var(--mono);
+    font-size: 11px; color: var(--muted); text-align: right;
+  }
+  .comp-bar-wrap { width: 80px; }
+  .comp-mini { height: 8px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .comp-fill { height: 100%; border-radius: 2px; }
+
+  /* HEATMAP-STYLE USAGE */
+  .usage-breakdown {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .usage-row { display: flex; align-items: center; gap: 10px; }
+  .usage-lbl { font-size: 11px; color: var(--muted); width: 120px; flex-shrink: 0; text-align: right; }
+  .usage-track { flex: 1; height: 22px; background: var(--bg); border-radius: 2px; overflow: hidden; position: relative; }
+  .usage-fill { height: 100%; display: flex; align-items: center; padding-left: 8px; font-family: var(--mono); font-size: 11px; font-weight: 600; color: white; border-radius: 2px; transition: width 1.2s ease; }
+  .usage-total { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 80px; text-align: right; flex-shrink: 0; }
+
+  /* ILL COMPARISON */
+  .ill-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border);
+  }
+  .ill-side { background: var(--panel); padding: 14px; }
+  .ill-dir { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 8px; }
+  .ill-val { font-family: var(--mono); font-size: 24px; font-weight: 600; color: var(--navy); }
+  .ill-breakdown { margin-top: 10px; }
+  .ill-sub { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .ill-sub:last-child { border-bottom: none; }
+  .ill-sub-label { color: var(--muted); }
+  .ill-sub-val { font-family: var(--mono); font-weight: 600; color: var(--text); }
+
+  /* FINANCE WATERFALL */
+  .finance-rows { display: flex; flex-direction: column; gap: 2px; }
+  .fin-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 2px;
+  }
+  .fin-row.total { background: var(--navy); }
+  .fin-row.sub { background: var(--bg); }
+  .fin-row.subsub { background: white; padding-left: 24px; border-left: 3px solid var(--border); margin-left: 10px; }
+  .fin-label { flex: 1; font-size: 12px; }
+  .fin-row.total .fin-label { color: white; font-weight: 600; }
+  .fin-row.sub .fin-label { color: var(--text); font-weight: 500; }
+  .fin-row.subsub .fin-label { color: var(--muted); font-size: 11px; }
+  .fin-val { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .fin-row.total .fin-val { color: #F5D98B; }
+  .fin-row.sub .fin-val { color: var(--navy); }
+  .fin-row.subsub .fin-val { color: var(--muted); }
+  .fin-pct { font-family: var(--mono); font-size: 10px; width: 40px; text-align: right; }
+  .fin-row.total .fin-pct { color: rgba(255,255,255,0.5); }
+  .fin-row.sub .fin-pct { color: var(--muted); }
+
+  /* STAFF BREAKDOWN */
+  .staff-table { width: 100%; border-collapse: collapse; }
+  .staff-table th {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600;
+    padding: 8px 10px; border-bottom: 2px solid var(--border);
+    text-align: left;
+  }
+  .staff-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .staff-table tr:last-child td { border-bottom: none; }
+  .staff-table tr.total-row td { font-weight: 600; background: var(--bg); }
+  .staff-fte { font-family: var(--mono); font-weight: 600; color: var(--navy); }
+  .staff-pct { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .staff-bar-wrap { width: 100px; }
+  .staff-mini { height: 8px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .staff-fill { height: 100%; border-radius: 2px; }
+
+  /* ENROLLMENT TABLE */
+  .enroll-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border);
+    margin-bottom: 12px;
+  }
+  .enroll-cell { background: var(--panel); padding: 12px 14px; }
+  .enroll-val { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--navy); }
+  .enroll-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* FOOTNOTE */
+  .footnote {
+    padding: 12px 24px 24px;
+    font-size: 11px; color: var(--muted);
+    font-family: var(--mono);
+    max-width: 1400px; margin: 0 auto;
+  }
+
+  @media (max-width: 900px) {
+    .grid-main { grid-template-columns: 1fr; }
+    .grid, .summary-row { padding-left: 12px; padding-right: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-badge">UCSD</span>
+    <span class="topbar-title">Library Analytics Dashboard · FY 2024–2025</span>
+  </div>
+  <div class="topbar-right">ACRL Survey Data · Internal Reporting</div>
+</div>
+
+<header>
+  <div class="header-row">
+    <div>
+      <div class="header-title">UC San Diego Library — Impact &amp; Analytics</div>
+      <div class="header-sub">Data Source: ACRL Trends and Statistics Survey · Internal Library Reporting · FY 2024–2025</div>
+    </div>
+  </div>
+  <div class="summary-row">
+    <div class="sum-cell c-teal">
+      <div class="sum-val">6,005,946</div>
+      <div class="sum-label">Total Resource Usage</div>
+    </div>
+    <div class="sum-cell c-gold">
+      <div class="sum-val">1,251,760</div>
+      <div class="sum-label">Annual Gate Count</div>
+    </div>
+    <div class="sum-cell c-blue">
+      <div class="sum-val">44,256</div>
+      <div class="sum-label">Students Served</div>
+    </div>
+    <div class="sum-cell c-red">
+      <div class="sum-val">$15,053,319</div>
+      <div class="sum-label">Total Expenditures</div>
+    </div>
+    <div class="sum-cell c-green">
+      <div class="sum-val">230.29</div>
+      <div class="sum-label">Staff FTEs</div>
+    </div>
+    <div class="sum-cell c-teal">
+      <div class="sum-val">4,511,759</div>
+      <div class="sum-label">Collection Titles</div>
+    </div>
+    <div class="sum-cell c-gold">
+      <div class="sum-val">26,895</div>
+      <div class="sum-label">ILL Transactions</div>
+    </div>
+  </div>
+</header>
+
+<div class="grid grid-main">
+
+  <!-- COL 1: SERVICES -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">🎓 Student Learning &amp; Instruction</div>
+        <span class="pnl-tag tag-teal">FY 2024–25</span>
+      </div>
+      <div class="pnl-body">
+        <div class="big-num-grid">
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--teal)"></div>
+            <div class="big-num-val">19,058</div>
+            <div class="big-num-label">Group Instruction Attendees</div>
+          </div>
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--teal)"></div>
+            <div class="big-num-val">15,306</div>
+            <div class="big-num-label">Reference Transactions</div>
+          </div>
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--blue)"></div>
+            <div class="big-num-val">3,084</div>
+            <div class="big-num-label">Consultations</div>
+          </div>
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--blue)"></div>
+            <div class="big-num-val">8,572</div>
+            <div class="big-num-label">Virtual Reference</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">🚶 Physical Access</div>
+        <span class="pnl-tag tag-navy">Gate &amp; Hours</span>
+      </div>
+      <div class="pnl-body">
+        <table class="metric-table">
+          <tr>
+            <td class="metric-label">Annual Gate Count</td>
+            <td class="metric-bar-cell"><div class="mini-bar"><div class="mini-fill" style="width:100%;background:var(--navy)"></div></div></td>
+            <td class="metric-val">1,251,760</td>
+          </tr>
+          <tr>
+            <td class="metric-label">Typical Week Visits</td>
+            <td class="metric-bar-cell"><div class="mini-bar"><div class="mini-fill" style="width:100%;background:var(--blue)"></div></div></td>
+            <td class="metric-val">40,102</td>
+          </tr>
+          <tr>
+            <td class="metric-label">Hours Open / Week</td>
+            <td class="metric-bar-cell"><div class="mini-bar"><div class="mini-fill" style="width:53%;background:var(--teal)"></div></div></td>
+            <td class="metric-val">89 hrs</td>
+          </tr>
+          <tr>
+            <td class="metric-label"><span>Visits per Student (Annual)</span><small>Based on 44,256 headcount</small></td>
+            <td class="metric-bar-cell"><div class="mini-bar"><div class="mini-fill" style="width:28%;background:var(--gold)"></div></div></td>
+            <td class="metric-val">~14.1×</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">📦 Interlibrary Loan Services</div>
+        <span class="pnl-tag tag-red">Sent &amp; Received</span>
+      </div>
+      <div class="pnl-body">
+        <div class="ill-compare">
+          <div class="ill-side">
+            <div class="ill-dir">📥 Received</div>
+            <div class="ill-val">17,049</div>
+            <div class="ill-breakdown">
+              <div class="ill-sub"><span class="ill-sub-label">Returnable</span><span class="ill-sub-val">12,216</span></div>
+              <div class="ill-sub"><span class="ill-sub-label">Non-returnable</span><span class="ill-sub-val">2,606</span></div>
+              <div class="ill-sub"><span class="ill-sub-label">Commercial docs</span><span class="ill-sub-val">2,227</span></div>
+            </div>
+          </div>
+          <div class="ill-side">
+            <div class="ill-dir">📤 Provided</div>
+            <div class="ill-val">9,846</div>
+            <div class="ill-breakdown">
+              <div class="ill-sub"><span class="ill-sub-label">Returnable</span><span class="ill-sub-val">7,525</span></div>
+              <div class="ill-sub"><span class="ill-sub-label">Non-returnable</span><span class="ill-sub-val">2,321</span></div>
+              <div class="ill-sub"><span class="ill-sub-label">Total</span><span class="ill-sub-val">9,846</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COL 2: COLLECTIONS -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">📚 Resource Usage Breakdown</div>
+        <span class="pnl-tag tag-gold">6,005,946 Total</span>
+      </div>
+      <div class="pnl-body">
+        <div class="usage-breakdown">
+          <div class="usage-row">
+            <div class="usage-lbl">E-Serials</div>
+            <div class="usage-track"><div class="usage-fill" style="width:93.1%;background:linear-gradient(90deg,#B7791F,#D4A825);">5,589,871</div></div>
+            <div class="usage-total">93.1%</div>
+          </div>
+          <div class="usage-row">
+            <div class="usage-lbl">E-Books &amp; Media</div>
+            <div class="usage-track"><div class="usage-fill" style="width:6.4%;background:linear-gradient(90deg,#1A5276,#2E86C1);min-width:70px;">385,441</div></div>
+            <div class="usage-total">6.4%</div>
+          </div>
+          <div class="usage-row">
+            <div class="usage-lbl">Physical Circ.</div>
+            <div class="usage-track"><div class="usage-fill" style="width:0.5%;background:linear-gradient(90deg,#0E6655,#1ABC9C);min-width:60px;">30,634</div></div>
+            <div class="usage-total">0.5%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">🗂️ Collection Size</div>
+        <span class="pnl-tag tag-blue">Physical vs Digital</span>
+      </div>
+      <div class="pnl-body">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="right">Physical</th>
+              <th class="right">Digital</th>
+              <th class="right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Books (titles)</td>
+              <td class="comp-val">1,742,440</td>
+              <td class="comp-val">2,769,319</td>
+              <td class="comp-val">4,511,759</td>
+            </tr>
+            <tr>
+              <td>Serials</td>
+              <td class="comp-val">60,866</td>
+              <td class="comp-val">395,290</td>
+              <td class="comp-val">456,156</td>
+            </tr>
+            <tr>
+              <td>Media</td>
+              <td class="comp-val">201,099</td>
+              <td class="comp-val">183,839</td>
+              <td class="comp-val">384,938</td>
+            </tr>
+            <tr>
+              <td>Databases</td>
+              <td class="comp-val">—</td>
+              <td class="comp-val">901</td>
+              <td class="comp-val">901</td>
+            </tr>
+            <tr style="font-weight:600;background:var(--bg);">
+              <td><strong>TOTAL</strong></td>
+              <td class="comp-val">2,004,405</td>
+              <td class="comp-val">3,349,349</td>
+              <td class="comp-val">5,353,754</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">🏛️ Institutional Repository</div>
+        <span class="pnl-tag tag-teal">Scholarly Output</span>
+      </div>
+      <div class="pnl-body">
+        <div class="big-num-grid">
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--teal)"></div>
+            <div class="big-num-val sm">408,019</div>
+            <div class="big-num-label">Items Held</div>
+          </div>
+          <div class="big-num-cell">
+            <div class="big-num-accent" style="background:var(--teal)"></div>
+            <div class="big-num-val sm">11,115,630</div>
+            <div class="big-num-label">Item Views</div>
+          </div>
+        </div>
+        <div style="padding:10px 6px 2px;font-size:11px;color:var(--muted);">
+          Avg views per item: <strong style="color:var(--navy);font-family:var(--mono);">27.2</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COL 3: PEOPLE & FINANCE -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">👥 Staff FTE Breakdown</div>
+        <span class="pnl-tag tag-navy">230.29 Total</span>
+      </div>
+      <div class="pnl-body">
+        <table class="staff-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th style="text-align:right">FTE</th>
+              <th style="text-align:right">%</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Librarians</td>
+              <td class="staff-fte" style="text-align:right">52.38</td>
+              <td class="staff-pct" style="text-align:right">22.7%</td>
+              <td class="staff-bar-wrap"><div class="staff-mini"><div class="staff-fill" style="width:22.7%;background:var(--teal)"></div></div></td>
+            </tr>
+            <tr>
+              <td>Other Professional</td>
+              <td class="staff-fte" style="text-align:right">47.34</td>
+              <td class="staff-pct" style="text-align:right">20.6%</td>
+              <td class="staff-bar-wrap"><div class="staff-mini"><div class="staff-fill" style="width:20.6%;background:var(--gold)"></div></div></td>
+            </tr>
+            <tr>
+              <td>All Other Paid Staff</td>
+              <td class="staff-fte" style="text-align:right">112.29</td>
+              <td class="staff-pct" style="text-align:right">48.8%</td>
+              <td class="staff-bar-wrap"><div class="staff-mini"><div class="staff-fill" style="width:48.8%;background:var(--navy)"></div></div></td>
+            </tr>
+            <tr>
+              <td>Student Assistants</td>
+              <td class="staff-fte" style="text-align:right">18.28</td>
+              <td class="staff-pct" style="text-align:right">7.9%</td>
+              <td class="staff-bar-wrap"><div class="staff-mini"><div class="staff-fill" style="width:7.9%;background:var(--red)"></div></div></td>
+            </tr>
+            <tr class="total-row">
+              <td><strong>TOTAL</strong></td>
+              <td class="staff-fte" style="text-align:right">230.29</td>
+              <td class="staff-pct" style="text-align:right">100%</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">💰 Financial Summary</div>
+        <span class="pnl-tag tag-red">$15,053,319 Total</span>
+      </div>
+      <div class="pnl-body">
+        <div class="finance-rows">
+          <div class="fin-row total">
+            <div class="fin-label">Total Expenditures</div>
+            <div class="fin-pct">100%</div>
+            <div class="fin-val">$15,053,319</div>
+          </div>
+          <div class="fin-row sub">
+            <div class="fin-label">Materials &amp; Services</div>
+            <div class="fin-pct" style="color:var(--muted)">67.9%</div>
+            <div class="fin-val">$10,224,150</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">Ongoing Subscriptions</div>
+            <div class="fin-pct">57.2%</div>
+            <div class="fin-val">$8,604,988</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">E-journals</div>
+            <div class="fin-pct">31.9%</div>
+            <div class="fin-val">$4,805,908</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">One-time Purchases</div>
+            <div class="fin-pct">8.7%</div>
+            <div class="fin-val">$1,307,248</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">Other Materials</div>
+            <div class="fin-pct">2.1%</div>
+            <div class="fin-val">$311,914</div>
+          </div>
+          <div class="fin-row sub">
+            <div class="fin-label">Operations &amp; Maintenance</div>
+            <div class="fin-pct" style="color:var(--muted)">32.1%</div>
+            <div class="fin-val">$4,829,169</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">Preservation Services</div>
+            <div class="fin-pct">0.8%</div>
+            <div class="fin-val">$112,977</div>
+          </div>
+          <div class="fin-row subsub">
+            <div class="fin-label">All Other O&amp;M</div>
+            <div class="fin-pct">31.3%</div>
+            <div class="fin-val">$4,716,192</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pnl">
+      <div class="pnl-header">
+        <div class="pnl-title">🎓 Enrollment — Community Served</div>
+        <span class="pnl-tag tag-blue">FY 2024–25</span>
+      </div>
+      <div class="pnl-body">
+        <div class="enroll-grid">
+          <div class="enroll-cell">
+            <div class="enroll-val">44,256</div>
+            <div class="enroll-label">Total Headcount</div>
+          </div>
+          <div class="enroll-cell">
+            <div class="enroll-val">42,178</div>
+            <div class="enroll-label">FTE Students</div>
+          </div>
+          <div class="enroll-cell">
+            <div class="enroll-val">34,955</div>
+            <div class="enroll-label">Undergraduates</div>
+          </div>
+          <div class="enroll-cell">
+            <div class="enroll-val">9,301</div>
+            <div class="enroll-label">Graduate Students</div>
+          </div>
+        </div>
+        <table class="metric-table">
+          <tr>
+            <td class="metric-label">Cost per student FTE</td>
+            <td class="metric-bar-cell"></td>
+            <td class="metric-val">$356.80</td>
+          </tr>
+          <tr>
+            <td class="metric-label">Resource uses per FTE</td>
+            <td class="metric-bar-cell"></td>
+            <td class="metric-val">142.4×</td>
+          </tr>
+          <tr>
+            <td class="metric-label">Gate visits per FTE</td>
+            <td class="metric-bar-cell"></td>
+            <td class="metric-val">29.7×</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="footnote">
+  SOURCE: ACRL Trends and Statistics Survey 2024–2025 · Internal Library Reporting 2024–2025 · UC San Diego Library · library.ucsd.edu
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Animate all bars
+    const fills = document.querySelectorAll('.mini-fill, .staff-fill, .comp-fill, .usage-fill');
+    fills.forEach(el => {
+      const w = el.style.width;
+      el.style.width = '0';
+      setTimeout(() => { el.style.width = w; }, 200);
+    });
+  });
+</script>
+
+</body>
+</html>
